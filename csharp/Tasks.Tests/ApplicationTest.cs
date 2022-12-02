@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using NUnit.Framework;
 
 namespace Tasks
@@ -10,27 +11,23 @@ namespace Tasks
 		public const string PROMPT = "> ";
 
 		private FakeConsole console;
-		private System.Threading.Thread applicationThread;
+        private CancellationTokenSource _cancellationToken;
+        private IDisposable _runTask;
 
 		[SetUp]
 		public void StartTheApplication()
 		{
 			this.console = new FakeConsole();
 			var taskList = new TaskList(console);
-			this.applicationThread = new System.Threading.Thread(() => taskList.Run());
-			applicationThread.Start();
+			_cancellationToken = new CancellationTokenSource();
+			_runTask = System.Threading.Tasks.Task.Run(() => taskList.Run(_cancellationToken.Token));
 		}
 
 		[TearDown]
 		public void KillTheApplication()
 		{
-			if (applicationThread == null || !applicationThread.IsAlive)
-			{
-				return;
-			}
-
-			applicationThread.Abort();
-			throw new Exception("The application is still running.");
+			_cancellationToken.Cancel();
+			_runTask.Dispose();
 		}
 
 		[Test, Timeout(1000)]
