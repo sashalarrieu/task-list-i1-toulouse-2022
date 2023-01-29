@@ -9,9 +9,9 @@ namespace Tasks
 		private readonly Projects _projects = new ();
 		private readonly IConsole _console;
 
-		private long _lastIdentifier;
+		private readonly TaskListLastId _lastId;
 
-		public static void Main()
+        public static void Main()
 		{
 			new TaskList(new RealConsole()).Run(CancellationToken.None);
 		}
@@ -42,7 +42,7 @@ namespace Tasks
 
 		private void Execute(string commandLine)
 		{
-			var commandRest = commandLine.Split(" ".ToCharArray(), 2);
+			var commandRest = SplitCommand(commandLine);
 			var command = commandRest[0];
 			switch (command) {
 			case "show":
@@ -69,7 +69,7 @@ namespace Tasks
 
 		private void Add(string commandLine)
 		{
-			var subcommandRest = commandLine.Split(" ".ToCharArray(), 2);
+			var subcommandRest = SplitCommand(commandLine);
 			var subcommand = subcommandRest[0];
 
 			if (subcommand == "project") {
@@ -78,7 +78,7 @@ namespace Tasks
             }
             
             if (subcommand == "task") {
-				var projectTask = subcommandRest[1].Split(" ".ToCharArray(), 2);
+				var projectTask = SplitCommand(subcommandRest[1]);
 				AddTask(projectTask[0], projectTask[1]);
             }
 		}
@@ -88,10 +88,15 @@ namespace Tasks
 		private void AddTask(string project, string description)
         {
             _projects.AddTaskToProject(project,
-                new Task { Identifier = NextId(), Description = description, Done = false },
+                new Task { Identifier = _lastId.NextId(), Description = description, Done = false },
 				_console
             );
         }
+
+		private string[] SplitCommand(string command)
+		{
+			return command.Split(" ".ToCharArray(), 2);
+		}
 
 		private void Check(string idString)
 		{
@@ -119,11 +124,6 @@ namespace Tasks
 		private void Error(string command)
 		{
 			_console.WriteLine($"I don't know what the command \"{command}\" is.");
-		}
-
-		private long NextId()
-		{
-			return ++_lastIdentifier;
 		}
 	}
 }
